@@ -1,11 +1,22 @@
 import os
 import sys
-import sha3
 import json
 import uuid
-from web3.auto import w3
+import click
 from eth_keys import keys
-from . import ganache as network
+from web3 import Web3, HTTPProvider
+
+
+def dummy(*args, **argsdic):
+    if len(args) > 0 and args[0] == 'eth_newFilter':
+        return 0
+    else:
+        return original_request_blocking(*args, **argsdic)
+
+w3 = Web3(HTTPProvider('https://ropsten.infura.io/v3/c556c4fcd2d64c41baef3ef84e33052a'))
+original_request_blocking = w3.manager.request_blocking
+w3.manager.request_blocking = dummy
+
 
 abies = {
     'etherbank': '[{"constant": false, "inputs": [], "name": "unpause", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function"}, {"constant": true, "inputs": [], "name": "paused", "outputs": [{"name": "", "type": "bool"}], "payable": false, "stateMutability": "view", "type": "function"}, {"constant": true, "inputs": [], "name": "lastLoanId", "outputs": [{"name": "", "type": "uint256"}], "payable": false, "stateMutability": "view", "type": "function"}, {"constant": true, "inputs": [], "name": "liquidatorAddr", "outputs": [{"name": "", "type": "address"}], "payable": false, "stateMutability": "view", "type": "function"}, {"constant": false, "inputs": [], "name": "renounceOwnership", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function"}, {"constant": true, "inputs": [], "name": "oracleAddr", "outputs": [{"name": "", "type": "address"}], "payable": false, "stateMutability": "view", "type": "function"}, {"constant": true, "inputs": [], "name": "depositRate", "outputs": [{"name": "", "type": "uint256"}], "payable": false, "stateMutability": "view", "type": "function"}, {"constant": false, "inputs": [], "name": "pause", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function"}, {"constant": true, "inputs": [], "name": "owner", "outputs": [{"name": "", "type": "address"}], "payable": false, "stateMutability": "view", "type": "function"}, {"constant": true, "inputs": [], "name": "etherPrice", "outputs": [{"name": "", "type": "uint256"}], "payable": false, "stateMutability": "view", "type": "function"}, {"constant": true, "inputs": [], "name": "liquidationDuration", "outputs": [{"name": "", "type": "uint256"}], "payable": false, "stateMutability": "view", "type": "function"}, {"constant": false, "inputs": [{"name": "_newOwner", "type": "address"}], "name": "transferOwnership", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function"}, {"constant": true, "inputs": [], "name": "etherDollarAddr", "outputs": [{"name": "", "type": "address"}], "payable": false, "stateMutability": "view", "type": "function"}, {"inputs": [{"name": "_tokenAdd", "type": "address"}], "payable": false, "stateMutability": "nonpayable", "type": "constructor"}, {"payable": true, "stateMutability": "payable", "type": "fallback"}, {"anonymous": false, "inputs": [{"indexed": true, "name": "borrower", "type": "address"}, {"indexed": true, "name": "loanId", "type": "uint256"}, {"indexed": false, "name": "collateralAmount", "type": "uint256"}, {"indexed": false, "name": "amount", "type": "uint256"}], "name": "LoanGot", "type": "event"}, {"anonymous": false, "inputs": [{"indexed": true, "name": "borrower", "type": "address"}, {"indexed": true, "name": "loanId", "type": "uint256"}, {"indexed": false, "name": "collateralAmount", "type": "uint256"}], "name": "IncreaseCollatral", "type": "event"}, {"anonymous": false, "inputs": [{"indexed": false, "name": "borrower", "type": "address"}, {"indexed": true, "name": "loanId", "type": "uint256"}, {"indexed": false, "name": "collateralAmount", "type": "uint256"}, {"indexed": false, "name": "amount", "type": "uint256"}], "name": "LoanSettled", "type": "event"}, {"anonymous": false, "inputs": [], "name": "Pause", "type": "event"}, {"anonymous": false, "inputs": [], "name": "Unpause", "type": "event"}, {"anonymous": false, "inputs": [{"indexed": true, "name": "previousOwner", "type": "address"}], "name": "OwnershipRenounced", "type": "event"}, {"anonymous": false, "inputs": [{"indexed": true, "name": "previousOwner", "type": "address"}, {"indexed": true, "name": "newOwner", "type": "address"}], "name": "OwnershipTransferred", "type": "event"}, {"constant": false, "inputs": [{"name": "_liquidatorAddr", "type": "address"}], "name": "setLiquidator", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function"}, {"constant": false, "inputs": [{"name": "_tokenAdd", "type": "address"}], "name": "setEtherDollar", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function"}, {"constant": false, "inputs": [{"name": "_oracleAddr", "type": "address"}], "name": "setOracle", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function"}, {"constant": false, "inputs": [{"name": "_type", "type": "uint256"}, {"name": "value", "type": "uint256"}], "name": "setVariable", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function"}, {"constant": false, "inputs": [{"name": "amount", "type": "uint256"}], "name": "getLoan", "outputs": [], "payable": true, "stateMutability": "payable", "type": "function"}, {"constant": false, "inputs": [{"name": "loanId", "type": "uint256"}], "name": "increaseCollatral", "outputs": [], "payable": true, "stateMutability": "payable", "type": "function"}, {"constant": false, "inputs": [{"name": "amount", "type": "uint256"}, {"name": "loanId", "type": "uint256"}], "name": "settleLoan", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function"}, {"constant": false, "inputs": [{"name": "loanId", "type": "uint256"}], "name": "liquidate", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function"}, {"constant": false, "inputs": [{"name": "loanId", "type": "uint256"}, {"name": "amount", "type": "uint256"}, {"name": "buyer", "type": "address"}], "name": "liquidated", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function"}]',
@@ -15,32 +26,22 @@ abies = {
 }
 
 cfg = {
-    'gas': 5*10**6,
-    'gas_price': 150*10**9
+    'gas': 500*10**3,
+    'gas_price': 30*10**9
 }
 
-etherbank_address = w3.toChecksumAddress('0x3130f14038a44a11986d0f1919f68684e6fa93aa')
+etherbank_address = w3.toChecksumAddress('0x0607eb04ecad152546b83986cbfe14818ab51101')
 
-# export ETHERBANK_PRIVATEKEY="93449babbac70bfdefc807a0f012c74cd68f92ca35eaf952e991a329f88fc850"
-
-
-def approve_amount(spender, dollar, private_key):
-    part1 = sha3.keccak_256(b'approve(address,uint256)').hexdigest()[:8]
-    part2 = pad32(hex2int(spender))
-    part3 = pad32(dollar * 100)  # CONVERT DOLLAR TO CENT
-    data = '0x{0}{1}{2}'.format(part1, part2, part3).lower()
-    raw_transaction = sign_transaction(cfg['addresses']['etherdollar'], 0, data, private_key)
-    network.send_raw_transaction(raw_transaction)
+etherbank_contract = w3.eth.contract(
+    address=etherbank_address, abi=abies['etherbank'])
 
 
-def get_addresses(contract_addr):
-    contract = w3.eth.contract(
-        address=contract_addr, abi=json.loads(abies['etherbank']))
+def get_addresses(etherbank_addr):
     addresses = {
-        'etherbank': contract_addr,
-        'oracles': contract.call().oracleAddr(),
-        'liquidator': contract.call().liquidatorAddr(),
-        'etherdollar': contract.call().etherDollarAddr(),
+        'etherbank': etherbank_addr,
+        'oracles': etherbank_contract.call().oracleAddr(),
+        'liquidator': etherbank_contract.call().liquidatorAddr(),
+        'etherdollar': etherbank_contract.call().etherDollarAddr(),
     }
     return addresses
 
@@ -67,8 +68,30 @@ def start():
             with open(os.path.expanduser('~/.etherbank.json'), 'w') as f:
                 f.write(json.dumps(cfg['addresses']))
         except:
-            print('First remove ~/.etherbank/addresses and try again')
+            print('First remove ~/.etherbank.json and try again')
             sys.exit()
+
+
+start()
+
+
+oracles_contract = w3.eth.contract(
+    address=cfg['addresses']['oracles'], abi=abies['oracles'])
+
+liquidator_contract = w3.eth.contract(
+    address=cfg['addresses']['liquidator'], abi=abies['liquidator'])
+
+etherdollar_contract = w3.eth.contract(
+    address=cfg['addresses']['etherdollar'], abi=abies['etherdollar'])
+
+
+def approve_amount(spender, dollar, private_key):
+    print('Approve {} dollars.'.format(dollar))
+    spender = w3.toChecksumAddress(spender)
+    func = etherdollar_contract.functions.approve(spender, int(dollar*100))
+    tx_hash = send_transaction(func, 0, private_key)
+    w3.eth.waitForTransactionReceipt(tx_hash)
+    return tx_hash
 
 
 def check_account(ctx, param, value):
@@ -108,16 +131,35 @@ def sign_transaction(contract_addr, wei_amount, data, private_key):
         'value': hex(int(wei_amount)),
         'gas': hex(cfg['gas']),
         'gasPrice': hex(cfg['gas_price']),
-        'nonce': hex(network.get_nonce(priv2addr(private_key))),
+        'nonce': hex(utils.get_nonce(priv2addr(private_key))),
         'data': data
     }
     signed = w3.eth.account.signTransaction(transaction, private_key)
     return signed.rawTransaction.hex()
 
 
-def get_abi(contract_name):
-    with open("../build/contracts/{}.json".format(contract_name)) as f:
-        print(json.dumps(json.load(f)['abi']))
+def send_transaction(func, value, private_key):
+    transaction = func.buildTransaction({
+        'nonce': w3.eth.getTransactionCount(priv2addr(private_key)),
+        'from': priv2addr(private_key),
+        'value': value,
+        'gas': cfg['gas'],
+        'gasPrice': cfg['gas_price']
+    })
+    signed = w3.eth.account.signTransaction(transaction, private_key)
+    raw_transaction = signed.rawTransaction.hex()
+    tx_hash = w3.eth.sendRawTransaction(raw_transaction).hex()
+    rec = w3.eth.waitForTransactionReceipt(tx_hash)
+    if rec['status']:
+        click.secho('tx: {}'.format(tx_hash), fg='green')
+    else:
+        click.secho('Reverted!\nError occured during contract execution', fg='green')
+    click.secho()
+    return tx_hash
 
 
-start()
+def send_eth_call(func, sender):
+    result = func.call({
+        'from': sender,
+    })
+    return result
