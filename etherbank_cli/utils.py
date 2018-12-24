@@ -101,19 +101,6 @@ def send_eth_call(func, sender):
     return result
 
 
-# FIXME: infura not supports filtering of events.
-# Here we are hacking web3.py filters to use getLogs rpc endpoint instead.
-def dummy(*args, **argsdic):
-    if len(args) > 0 and args[0] == 'eth_newFilter':
-        return 0
-    else:
-        return original_request_blocking(*args, **argsdic)
-
-
-original_request_blocking = w3.manager.request_blocking
-w3.manager.request_blocking = dummy
-
-
 def start():
     global addresses, contracts, w3
     w3 = Web3(HTTPProvider(config.INFURA_URL))
@@ -149,3 +136,16 @@ def start():
 # we are initalizing some variables here
 addresses = contracts = w3 = None
 start()
+
+
+# FIXME: infura not supports filtering of events.
+# Here we are hacking web3.py filters to use getLogs rpc endpoint instead.
+def dummy(*args, **argsdic):
+    if len(args) > 0 and args[0] == 'eth_newFilter':
+        return 0
+    else:
+        return original_request_blocking(*args, **argsdic)
+
+
+original_request_blocking = w3.manager.request_blocking
+w3.manager.request_blocking = dummy
