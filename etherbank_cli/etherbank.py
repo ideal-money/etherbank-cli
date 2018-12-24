@@ -164,7 +164,7 @@ def loans_list(account, loan_id):
     for loan in sorted(result.values(), key=lambda loan: loan['loanId']):
         click.secho('loadId:\t\t{}'.format(loan['loanId']), fg='green')
         click.secho(
-            'collateral:\t{} ether'.format(loan['collateralAmount'] * 10**-18),
+            'collateral:\t{} ether'.format(round(loan['collateralAmount'] * 10**-18, 10)),
             fg='green')
         click.secho(
             'amount:\t\t{} dollar'.format(loan['amount'] * 10**-2), fg='green')
