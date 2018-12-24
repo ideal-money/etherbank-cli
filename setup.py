@@ -28,11 +28,10 @@ setup(
 
     install_requires=[
         "web3 == 4.8.1",
-        "click == 7.0",
-        "pysha3 == 1.0.2"
+        "click == 7.0"
     ],
 
-    entry_points = {
+    entry_points={
         'console_scripts': [
             'etherbank = etherbank_cli.etherbank:main',
             'oracles = etherbank_cli.oracles:main',

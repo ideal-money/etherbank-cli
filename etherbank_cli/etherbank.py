@@ -1,3 +1,4 @@
+import sys
 import click
 from . import utils
 
@@ -114,18 +115,26 @@ def loans_list(account, loan_id):
     "Get the account's loans or the specify loan"
 
     result = {}
-    if account is None and loan_id is None:
-        click.secho('Enther an account or a loan ID', fg='red')
+    if account is not None and loan_id is not None:
+        click.secho('Enter an account or a loan ID', fg='red')
+        sys.exit()
     if loan_id:
         loan_filter = utils.contracts['etherbank'].events.LoanGot.createFilter(
             fromBlock=1,
             toBlock='latest',
             argument_filters={'loanId': loan_id})
-    else:
+    elif account:
         loan_filter = utils.contracts['etherbank'].events.LoanGot.createFilter(
             fromBlock=1,
             toBlock='latest',
             argument_filters={'borrower': account})
+    else:
+        account = utils.priv2addr(utils.check_account(None, None, None))
+        loan_filter = utils.contracts['etherbank'].events.LoanGot.createFilter(
+            fromBlock=1,
+            toBlock='latest',
+            argument_filters={'borrower': account})
+
     loans = utils.w3.eth.getLogs(loan_filter.filter_params)
     for loan_bytes in loans:
         loan = loan_filter.format_entry(loan_bytes)
