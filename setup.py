@@ -20,7 +20,7 @@ setup(
     author="Siftal",
 
     description="Command line interfaces to work with etherbank, oracles and liquidator smart contracts",
-    long_description=read("README.rst"),
+    long_description=read("README.md"),
 
     python_requires='>=3.6',
 
