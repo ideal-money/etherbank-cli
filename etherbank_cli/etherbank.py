@@ -1,5 +1,3 @@
-#!/usr/local/bin/python3.7
-
 import click
 from . import utils
 
@@ -11,49 +9,72 @@ def main():
 
 
 @main.command()
-@click.option('--ether', type=float, required=True, help='The collateral amount in ETH')
-@click.option('--dollar', type=float, required=True, help='The loan amount in Ether dollar')
-@click.option('--private-key', callback=utils.check_account, help='The privat key to sign the transaction')
+@click.option(
+    '--ether', type=float, required=True, help='The collateral amount in ETH')
+@click.option(
+    '--dollar',
+    type=float,
+    required=True,
+    help='The loan amount in Ether dollar')
+@click.option(
+    '--private-key',
+    callback=utils.check_account,
+    help='The privat key to sign the transaction')
 def get_loan(ether, dollar, private_key):
     'Get Ether dollar loan by depositing ETH'
 
-    func = utils.etherbank_contract.functions.getLoan(int(dollar*100))
-    tx_hash = utils.send_transaction(func, int(ether*10**18), private_key)
+    func = utils.contracts['etherbank'].functions.getLoan(int(dollar * 100))
+    tx_hash = utils.send_transaction(func, int(ether * 10**18), private_key)
     return tx_hash
 
 
 @main.command()
-@click.option('--ether', type=float, required=True, help='The collateral amount in ETH')
+@click.option(
+    '--ether', type=float, required=True, help='The collateral amount in ETH')
 @click.option('--loan-id', type=int, required=True, help="The loan's ID")
-@click.option('--private-key', callback=utils.check_account, help='The privat key to sign the transaction')
+@click.option(
+    '--private-key',
+    callback=utils.check_account,
+    help='The privat key to sign the transaction')
 def increase_collateral(ether, loan_id, private_key):
     "Increase the loan's collateral"
 
-    func = utils.etherbank_contract.functions.increaseCollatral(loan_id)
-    tx_hash = utils.send_transaction(func, int(ether*10**18), private_key)
+    func = utils.contracts['etherbank'].functions.increaseCollatral(loan_id)
+    tx_hash = utils.send_transaction(func, int(ether * 10**18), private_key)
     return tx_hash
 
 
 @main.command()
-@click.option('--dollar', type=float, required=True, help='The loan amount in Ether dollar')
+@click.option(
+    '--dollar',
+    type=float,
+    required=True,
+    help='The loan amount in Ether dollar')
 @click.option('--loan-id', type=int, required=True, help="The loan's ID")
-@click.option('--private-key', callback=utils.check_account, help='The privat key to sign the transaction')
+@click.option(
+    '--private-key',
+    callback=utils.check_account,
+    help='The privat key to sign the transaction')
 def settle_loan(dollar, loan_id, private_key):
     'Settle the Ether dollar loan'
 
-    utils.approve_amount(utils.cfg['addresses']['etherbank'], dollar, private_key)
-    func = utils.etherbank_contract.functions.settleLoan(int(dollar*100), loan_id)
+    utils.approve_amount(utils.addresses['etherbank'], dollar, private_key)
+    func = utils.contracts['etherbank'].functions.settleLoan(
+        int(dollar * 100), loan_id)
     tx_hash = utils.send_transaction(func, 0, private_key)
     return tx_hash
 
 
 @main.command()
 @click.option('--loan-id', type=int, required=True, help='The loan id')
-@click.option('--private-key', callback=utils.check_account, help='The privat key to sign the transaction')
+@click.option(
+    '--private-key',
+    callback=utils.check_account,
+    help='The privat key to sign the transaction')
 def liquidate(loan_id, private_key):
     'Start the liquidation proccess'
 
-    func = utils.etherbank_contract.functions.liquidate(loan_id)
+    func = utils.contracts['etherbank'].functions.liquidate(loan_id)
     tx_hash = utils.send_transaction(func, 0, private_key)
     return tx_hash
 
@@ -64,7 +85,7 @@ def get_balance(account):
     "Get Ether dollar account's balance"
 
     account = utils.w3.toChecksumAddress(account)
-    func = utils.etherdollar_contract.functions.balanceOf(account)
+    func = utils.contracts['etherdollar'].functions.balanceOf(account)
     result = utils.send_eth_call(func, account)
     click.secho('Balance: {} ETD'.format(result / 100.0), fg='green')
     click.secho()
@@ -79,7 +100,7 @@ def allowance(owner, spender):
 
     owner = utils.w3.toChecksumAddress(owner)
     spender = utils.w3.toChecksumAddress(spender)
-    func = utils.etherdollar_contract.functions.allowance(owner, spender)
+    func = utils.contracts['etherdollar'].functions.allowance(owner, spender)
     result = utils.send_eth_call(func, spender)
     click.secho('Allowance: {} ETD'.format(result / 100.0), fg='green')
     click.secho()
@@ -96,37 +117,48 @@ def loans_list(account, loan_id):
     if account is None and loan_id is None:
         click.secho('Enther an account or a loan ID', fg='red')
     if loan_id:
-        loan_filter = utils.etherbank_contract.events.LoanGot.createFilter(
-            fromBlock=1, toBlock='latest', argument_filters={'loanId': loan_id})
+        loan_filter = utils.contracts['etherbank'].events.LoanGot.createFilter(
+            fromBlock=1,
+            toBlock='latest',
+            argument_filters={'loanId': loan_id})
     else:
-        loan_filter = utils.etherbank_contract.events.LoanGot.createFilter(
-            fromBlock=1, toBlock='latest', argument_filters={'borrower': account})
+        loan_filter = utils.contracts['etherbank'].events.LoanGot.createFilter(
+            fromBlock=1,
+            toBlock='latest',
+            argument_filters={'borrower': account})
     loans = utils.w3.eth.getLogs(loan_filter.filter_params)
     for loan_bytes in loans:
         loan = loan_filter.format_entry(loan_bytes)
         loan_id = loan['args']['loanId']
         result[loan_id] = dict(loan['args'])
-        settle_filter = utils.etherbank_contract.events.LoanSettled.createFilter(
-            fromBlock=1,
-            toBlock='latest',
-            argument_filters={'loanId': loan_id})
+        settle_filter = utils.contracts[
+            'etherbank'].events.LoanSettled.createFilter(
+                fromBlock=1,
+                toBlock='latest',
+                argument_filters={'loanId': loan_id})
         settles = utils.w3.eth.getLogs(settle_filter.filter_params)
         for settle_bytes in settles:
             settle = settle_filter.format_entry(settle_bytes)
-            result[loan_id]['collateralAmount'] -= settle['args']['collateralAmount']
+            result[loan_id]['collateralAmount'] -= settle['args'][
+                'collateralAmount']
             result[loan_id]['amount'] -= settle['args']['amount']
-        increas_filter = utils.etherbank_contract.events.IncreaseCollatral.createFilter(
-            fromBlock=1,
-            toBlock='latest',
-            argument_filters={'loanId': loan_id})
+        increas_filter = utils.contracts[
+            'etherbank'].events.IncreaseCollatral.createFilter(
+                fromBlock=1,
+                toBlock='latest',
+                argument_filters={'loanId': loan_id})
         increases = utils.w3.eth.getLogs(increas_filter.filter_params)
         for increas_bytes in increases:
             increase = increas_filter.format_entry(increas_bytes)
-            result[loan_id]['collateralAmount'] += increase['args']['collateralAmount']
+            result[loan_id]['collateralAmount'] += increase['args'][
+                'collateralAmount']
     for loan in sorted(result.values(), key=lambda loan: loan['loanId']):
         click.secho('loadId:\t\t{}'.format(loan['loanId']), fg='green')
-        click.secho('collateral:\t{} ether'.format(loan['collateralAmount']*10**-18), fg='green')
-        click.secho('amount:\t\t{} dollar'.format(loan['amount']*10**-2), fg='green')
+        click.secho(
+            'collateral:\t{} ether'.format(loan['collateralAmount'] * 10**-18),
+            fg='green')
+        click.secho(
+            'amount:\t\t{} dollar'.format(loan['amount'] * 10**-2), fg='green')
         click.secho()
     if not result:
         click.secho('There is no loan.', fg='green')
@@ -139,13 +171,14 @@ def get_variables():
     "Get the current variables' value"
 
     result = {
-        'depositRate': utils.etherbank_contract.call().depositRate() / 1000.0,
-        'etherPrice': utils.etherbank_contract.call().etherPrice() / 100.0,
+        'depositRate':
+        utils.contracts['etherbank'].call().depositRate() / 1000.0,
+        'etherPrice': utils.contracts['etherbank'].call().etherPrice() / 100.0,
     }
     click.secho('depositRate:\t\t{}'.format(result['depositRate']), fg='green')
     click.secho('etherPrice:\t\t{}'.format(result['etherPrice']), fg='green')
     click.secho()
-    return(result)
+    return (result)
 
 
 if __name__ == '__main__':
