@@ -41,7 +41,8 @@ def get_contracts():
 
 
 def approve_amount(spender, dollar, private_key):
-    print('Approve {} dollars.'.format(dollar))
+    print('Approve transferring {} dollars from your account by the contract'.
+          format(dollar))
     spender = w3.toChecksumAddress(spender)
     func = contracts['etherdollar'].functions.approve(spender,
                                                       int(dollar * 100))
@@ -55,8 +56,7 @@ def check_account(ctx, param, value):
         value = os.environ['ETHERBANK_PRIVATEKEY']
     if not value:
         print(
-            'Run:\n\texport ETHERBANK_PRIVATEKEY="your ethereum private key"'
-        )
+            'Run:\n\texport ETHERBANK_PRIVATEKEY="your ethereum private key"')
         sys.exit()
     if value.startswith('0x'):
         value = value[2:]
@@ -94,6 +94,28 @@ def send_transaction(func, value, private_key):
     return tx_hash
 
 
+def send_eth(contract_addr, value, private_key):
+    transaction = {
+        'nonce': w3.eth.getTransactionCount(priv2addr(private_key)),
+        'from': priv2addr(private_key),
+        'value': value,
+        'gas': config.GAS,
+        'to': contract_addr,
+        'gasPrice': config.GAS_PRICE
+    }
+    signed = w3.eth.account.signTransaction(transaction, private_key)
+    raw_transaction = signed.rawTransaction.hex()
+    tx_hash = w3.eth.sendRawTransaction(raw_transaction).hex()
+    rec = w3.eth.waitForTransactionReceipt(tx_hash)
+    if rec['status']:
+        click.secho('tx: {}'.format(tx_hash), fg='green')
+    else:
+        click.secho(
+            'Reverted!\nError occured during contract execution', fg='green')
+    click.secho()
+    return tx_hash
+
+
 def send_eth_call(func, sender):
     result = func.call({
         'from': sender,
@@ -106,8 +128,7 @@ def start():
     w3 = Web3(HTTPProvider(config.INFURA_URL))
     if 'ETHERBANK_PRIVATEKEY' not in os.environ:
         print(
-            'Run:\n\t export ETHERBANK_PRIVATEKEY="your ethereum private key"'
-        )
+            'Run:\n\t export ETHERBANK_PRIVATEKEY="your ethereum private key"')
         sys.exit()
 
     if os.path.exists(os.path.expanduser('~/.etherbank.json')):

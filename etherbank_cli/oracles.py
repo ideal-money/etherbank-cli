@@ -69,14 +69,15 @@ def get_variables():
     "Get the current variables' value"
 
     result = {
-        'depositRate':
-        utils.contracts['etherbank'].call().depositRate() / 1000.0,
+        'collateralRatio':
+        utils.contracts['etherbank'].call().collateralRatio() / 1000.0,
         'etherPrice':
         utils.contracts['etherbank'].call().etherPrice() / 100.0,
         'liquidationDuration':
         utils.contracts['etherbank'].call().liquidationDuration() / 60.0
     }
-    click.secho('depositRate:\t\t{}'.format(result['depositRate']), fg='green')
+    click.secho(
+        'collateralRatio:\t{}'.format(result['collateralRatio']), fg='green')
     click.secho('etherPrice:\t\t{} $'.format(result['etherPrice']), fg='green')
     click.secho(
         'liquidationDuration:\t{} Min'.format(result['liquidationDuration']),
