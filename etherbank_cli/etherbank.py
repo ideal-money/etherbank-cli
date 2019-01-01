@@ -91,6 +91,10 @@ def decrease_collateral(ether, loan_id, private_key):
 def settle_loan(dollar, loan_id, private_key):
     "Settle the Ether dollar loan"
 
+    loan = _loans_list(None, loan_id)
+    if loan['amount'] < dollar:
+        click.secho('The amount exceeds the loan', fg='red')
+        sys.exit()
     utils.approve_amount(utils.addresses['etherbank'], dollar, private_key)
     func = utils.contracts['etherbank'].functions.settleLoan(
         loan_id, int(dollar * 100))
@@ -161,6 +165,10 @@ def allowance(owner, spender):
 def loans_list(account, loan_id):
     "Get the account's loans or the specify loan"
 
+    _loans_list(account, loan_id)
+
+
+def _loans_list(account, loan_id):
     result = {}
     if account is not None and loan_id is not None:
         click.secho('Enter an account or a loan ID', fg='red')
