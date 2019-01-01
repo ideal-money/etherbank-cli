@@ -13,10 +13,14 @@ def get_addresses(etherbank_addr):
         address=w3.toChecksumAddress(config.ETHERBANK_ADDR),
         abi=config.ABIES['etherbank'])
     addresses = {
-        'etherbank': etherbank_addr,
-        'oracles': etherbank_contract.call().oracleAddr(),
-        'liquidator': etherbank_contract.call().liquidatorAddr(),
-        'etherdollar': etherbank_contract.call().etherDollarAddr(),
+        'etherbank':
+        etherbank_addr,
+        'oracles':
+        send_eth_call(etherbank_contract.functions.oraclesAddr(), None),
+        'liquidator':
+        send_eth_call(etherbank_contract.functions.liquidatorAddr(), None),
+        'etherdollar':
+        send_eth_call(etherbank_contract.functions.etherDollarAddr(), None)
     }
     return addresses
 
@@ -117,6 +121,8 @@ def send_eth(contract_addr, value, private_key):
 
 
 def send_eth_call(func, sender):
+    if not sender:
+        sender = priv2addr(check_account(None, None, None))
     result = func.call({
         'from': sender,
     })
@@ -143,14 +149,9 @@ def start():
             print('First edit the ETHERBANK_CONTRACTADDRESS and try again')
             sys.exit()
     else:
-        try:
-            addresses = get_addresses(
-                w3.toChecksumAddress(config.ETHERBANK_ADDR))
-            with open(os.path.expanduser('~/.etherbank.json'), 'w') as f:
-                f.write(json.dumps(addresses))
-        except:
-            print('First remove ~/.etherbank.json and try again')
-            sys.exit()
+        addresses = get_addresses(w3.toChecksumAddress(config.ETHERBANK_ADDR))
+        with open(os.path.expanduser('~/.etherbank.json'), 'w') as f:
+            f.write(json.dumps(addresses))
     get_contracts()
 
 

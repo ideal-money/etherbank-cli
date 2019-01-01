@@ -70,11 +70,16 @@ def get_variables():
 
     result = {
         'collateralRatio':
-        utils.contracts['etherbank'].call().collateralRatio() / 1000.0,
+        utils.send_eth_call(
+            utils.contracts['etherbank'].functions.collateralRatio(),
+            None) / 1000.0,
         'etherPrice':
-        utils.contracts['etherbank'].call().etherPrice() / 100.0,
+        utils.send_eth_call(
+            utils.contracts['etherbank'].functions.etherPrice(), None) / 100.0,
         'liquidationDuration':
-        utils.contracts['etherbank'].call().liquidationDuration() / 60.0
+        utils.send_eth_call(
+            utils.contracts['etherbank'].functions.liquidationDuration(), None)
+        / 60.0
     }
     click.secho(
         'collateralRatio:\t{}'.format(result['collateralRatio']), fg='green')

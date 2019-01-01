@@ -129,14 +129,13 @@ def get_balance(account):
 
 
 @main.command()
-@click.option('--dollar', type=int, help="The account's address")
+@click.option('--dollar', type=float, help="The account's address")
 def min_collateral(dollar):
     "Count min collateral for the loan"
 
-    account = utils.priv2addr(utils.check_account(None, None, None))
-    func = utils.contracts['etherbank'].functions.minCollateral(dollar * 100)
-    result = utils.send_eth_call(func, account)
-    click.secho('Min Collateral: {} ETH'.format(result / 10.0**18), fg='green')
+    func = utils.contracts['etherbank'].functions.minCollateral(int(dollar * 100))
+    result = utils.send_eth_call(func, None)
+    click.secho('Minimum collateral for getting {0} dollars loan is {1} ETH'.format(dollar, result / 10.0**18), fg='green')
     click.secho()
     return result
 
@@ -233,13 +232,23 @@ def get_variables():
 
     result = {
         'collateralRatio':
-        utils.contracts['etherbank'].call().collateralRatio() / 1000.0,
+        utils.send_eth_call(
+            utils.contracts['etherbank'].functions.collateralRatio(),
+            None) / 1000.0,
         'etherPrice':
-        utils.contracts['etherbank'].call().etherPrice() / 100.0,
+        utils.send_eth_call(
+            utils.contracts['etherbank'].functions.etherPrice(), None) / 100.0,
+        'liquidationDuration':
+        utils.send_eth_call(
+            utils.contracts['etherbank'].functions.liquidationDuration(), None)
+        / 60.0
     }
     click.secho(
         'collateralRatio:\t{}'.format(result['collateralRatio']), fg='green')
-    click.secho('etherPrice:\t\t{}'.format(result['etherPrice']), fg='green')
+    click.secho('etherPrice:\t\t{} dollar'.format(result['etherPrice']), fg='green')
+    click.secho(
+        'liquidationDuration:\t{} minute'.format(result['liquidationDuration']),
+        fg='green')
     click.secho()
     return (result)
 

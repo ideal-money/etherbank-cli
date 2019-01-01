@@ -1,6 +1,6 @@
 INFURA_URL = 'https://ropsten.infura.io/v3/c556c4fcd2d64c41baef3ef84e33052a'
 
-ETHERBANK_ADDR = '0x0ff877052eb95e308b281b88fbc685dabcd28e50'
+ETHERBANK_ADDR = '0x367266f60650bf93f301b51b0e7241f756402798'
 
 ABIES = {
     'etherbank':

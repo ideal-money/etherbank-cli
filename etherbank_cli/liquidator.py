@@ -20,8 +20,9 @@ def main():
 def place_bid(liquidation_id, ether, private_key):
     "Place a bid on the liquidation"
 
-    dollar = _active_liquidations(liquidation_id)[0]['amount'] / 100.0
+    dollar = _active_liquidations(private_key, liquidation_id)[0]['amount'] / 100.0
     utils.approve_amount(utils.addresses['liquidator'], dollar, private_key)
+    print('Place bid')
     func = utils.contracts['liquidator'].functions.placeBid(
         liquidation_id, int(ether * 10**18))
     tx_hash = utils.send_transaction(func, 0, private_key)
@@ -47,24 +48,28 @@ def stop_liquidation(liquidation_id, private_key):
 @main.command()
 @click.option(
     '--liquidation-id', type=int, required=True, help="The liquidation's ID")
-@click.option(
-    '--private-key',
-    callback=utils.check_account,
-    help='The privat key to sign the transaction')
-def get_best_bid(liquidation_id, private_key):
+def get_best_bid(liquidation_id):
     "Get the best bid amount and the bidder's address for the liquidation"
 
+    return _get_best_bid(liquidation_id)
+
+
+def _get_best_bid(liquidation_id):
     keys = [
         'loanId', 'collateral', 'amount', 'endTime', 'bestBid', 'bestBidder',
         'state'
     ]
-    func = utils.contracts['liquidator'].functions.liquidations(
-        liquidation_id).call()
-    result = dict(zip(keys, func))
-    click.secho(
-        'Best bid:\t{0} ETH'.format(result['bestBid'] / 10.0**18), fg='green')
-    click.secho('Bidder:\t\t{0}'.format(result['bestBidder']), fg='green')
-    click.secho()
+    res = utils.send_eth_call(
+        utils.contracts['liquidator'].functions.liquidations(liquidation_id),
+        None)
+    result = dict(zip(keys, res))
+    if result['bestBid']:
+        click.secho(
+            'bestBid:\t{0} ETH'.format(result['bestBid'] / 10.0**18), fg='green')
+        click.secho('bidder:\t\t{0}'.format(result['bestBidder']), fg='green')
+        click.secho()
+    else:
+        click.secho('There is no bid.', fg='green')
     return result
 
 
@@ -125,10 +130,10 @@ def _active_liquidations(liquidation_id=None):
                 time.strftime('%Y-%m-%d %H:%M:%S',
                               time.localtime(liquidation['endTime']))),
             fg='green')
+        _get_best_bid(int(liquidation['liquidationId']))
         click.secho()
     if not result:
         click.secho('There is no active liquidation.', fg='green')
-    click.secho()
     return result
 
 
