@@ -45,7 +45,7 @@ def get_contracts():
 
 
 def approve_amount(spender, dollar, private_key):
-    print('Approve transferring {} dollars from your account by the contract'.
+    print('Approving {} dollars transfer from your account by the contract'.
           format(dollar))
     spender = w3.toChecksumAddress(spender)
     func = contracts['etherdollar'].functions.approve(spender,

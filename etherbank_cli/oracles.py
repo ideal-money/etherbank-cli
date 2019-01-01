@@ -64,32 +64,5 @@ def finish_recruiting(private_key):
     return tx_hash
 
 
-@main.command()
-def get_variables():
-    "Get the current variables' value"
-
-    result = {
-        'collateralRatio':
-        utils.send_eth_call(
-            utils.contracts['etherbank'].functions.collateralRatio(),
-            None) / 1000.0,
-        'etherPrice':
-        utils.send_eth_call(
-            utils.contracts['etherbank'].functions.etherPrice(), None) / 100.0,
-        'liquidationDuration':
-        utils.send_eth_call(
-            utils.contracts['etherbank'].functions.liquidationDuration(), None)
-        / 60.0
-    }
-    click.secho(
-        'collateralRatio:\t{}'.format(result['collateralRatio']), fg='green')
-    click.secho('etherPrice:\t\t{} $'.format(result['etherPrice']), fg='green')
-    click.secho(
-        'liquidationDuration:\t{} Min'.format(result['liquidationDuration']),
-        fg='green')
-    click.secho()
-    return (result)
-
-
 if __name__ == '__main__':
     main()
