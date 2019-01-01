@@ -3,6 +3,7 @@ Command line interfaces to work with etherbank, oracles and liquidator smart con
 
 ### Prerequisite
 - Python3.6+
+- pip (for python3.6+)
 
 ### Install
 ```
