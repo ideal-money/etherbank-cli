@@ -220,7 +220,7 @@ def _loans_list(account, loan_id):
             result[loan_id]['collateral'] -= decrease['args']['collateral']
 
     for loan in sorted(result.values(), key=lambda loan: loan['loanId']):
-        click.secho('loadId:\t\t{}'.format(loan['loanId']), fg='green')
+        click.secho('loanId:\t\t{}'.format(loan['loanId']), fg='green')
         click.secho(
             'collateral:\t{} ether'.format(
                 round(loan['collateral'] * 10**-18, 10)),
