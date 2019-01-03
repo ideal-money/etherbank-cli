@@ -1,6 +1,7 @@
+import time
+import sys
 import click
 from . import utils
-import time
 
 
 @click.group()
@@ -20,7 +21,11 @@ def main():
 def place_bid(liquidation_id, ether, private_key):
     "Place a bid on the liquidation"
 
-    dollar = _active_liquidations(private_key, liquidation_id)[0]['amount'] / 100.0
+    the_liquidation = _active_liquidations(liquidation_id)
+    if not the_liquidation:
+        click.secho('Check the liquidationId.', fg='red')
+        sys.exit()
+    dollar = the_liquidation[0]['amount'] / 100.0
     utils.approve_amount(utils.addresses['liquidator'], dollar, private_key)
     print('Place bid')
     func = utils.contracts['liquidator'].functions.placeBid(
@@ -65,7 +70,8 @@ def _get_best_bid(liquidation_id):
     result = dict(zip(keys, res))
     if result['bestBid']:
         click.secho(
-            'bestBid:\t{0} ETH'.format(result['bestBid'] / 10.0**18), fg='green')
+            'bestBid:\t{0} ETH'.format(result['bestBid'] / 10.0**18),
+            fg='green')
         click.secho('bidder:\t\t{0}'.format(result['bestBidder']), fg='green')
         click.secho()
     else:
