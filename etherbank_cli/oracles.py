@@ -9,9 +9,12 @@ def main():
 
 
 @main.command()
-@click.option('--ether-price', type=float, help="The variable type")
-@click.option('--deposit-rate', type=float, help="The variable type")
-@click.option('--liquidation-duration', type=int, help="The variable type")
+@click.option('--ether-price', type=float, help="The ETH price in ETD")
+@click.option('--deposit-rate', type=float, help="The deposit ratio")
+@click.option(
+    '--liquidation-duration',
+    type=int,
+    help="The liquidation duration in minutes")
 @click.option(
     '--private-key',
     callback=utils.check_account,
