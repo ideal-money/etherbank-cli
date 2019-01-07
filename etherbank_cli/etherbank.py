@@ -20,7 +20,7 @@ def send_eth(ether, private_key):
     "Get Ether dollar loan by sending ETH"
 
     tx_hash = utils.send_eth(utils.addresses['etherbank'], int(ether * 10**18),
-        private_key)
+                             private_key)
     return tx_hash
 
 
@@ -92,6 +92,9 @@ def settle_loan(dollar, loan_id, private_key):
     "Settle the Ether dollar loan"
 
     loan = _loans_list(None, loan_id)
+    if not loan:
+        click.secho('Check the loanId.', fg='red')
+        sys.exit()
     if loan['amount'] < dollar:
         click.secho('The amount exceeds the loan', fg='red')
         sys.exit()
@@ -118,12 +121,10 @@ def liquidate(loan_id, private_key):
 
 
 @main.command()
-@click.option('--account', help="The account's address")
-def get_balance(account):
+def get_balance():
     "Get Ether dollar account's balance"
 
-    if not account:
-        account = utils.priv2addr(utils.check_account(None, None, None))
+    account = utils.current_user()
     account = utils.w3.toChecksumAddress(account)
     func = utils.contracts['etherdollar'].functions.balanceOf(account)
     result = utils.send_eth_call(func, account)
@@ -137,9 +138,12 @@ def get_balance(account):
 def min_collateral(dollar):
     "Count min collateral for the loan"
 
-    func = utils.contracts['etherbank'].functions.minCollateral(int(dollar * 100))
+    func = utils.contracts['etherbank'].functions.minCollateral(
+        int(dollar * 100))
     result = utils.send_eth_call(func, None)
-    click.secho('Minimum collateral for getting {0} dollars loan is {1} ETH'.format(dollar, result / 10.0**18), fg='green')
+    click.secho(
+        'Minimum collateral for getting {0} dollars loan is {1} ETH'.format(
+            dollar, result / 10.0**18), fg='green')
     click.secho()
     return result
 
@@ -160,25 +164,26 @@ def allowance(owner, spender):
 
 
 @main.command()
-@click.option('--account', help="The user's address")
-@click.option('--loan-id', type=int, help='The loan id')
-def loans_list(account, loan_id):
-    "Get the account's loans or the specify loan"
+@click.option('--loan-id', required=True, type=int, help='The loan id')
+def show(loan_id):
+    "Show the specified loan"
 
-    _loans_list(account, loan_id)
+    _loans_list(loan_id=loan_id)
 
 
-def _loans_list(account, loan_id):
+@main.command()
+def loans_list():
+    "Get the account's loans list"
+
+    account = utils.current_user()
+    _loans_list(account=account)
+
+
+def _loans_list(account=None, loan_id=None):
     result = {}
-    if account is not None and loan_id is not None:
-        click.secho('Enter an account or a loan ID', fg='red')
-        sys.exit()
     if loan_id:
         filters = {'loanId': loan_id}
     elif account:
-        filters = {'recipient': account}
-    else:
-        account = utils.priv2addr(utils.check_account(None, None, None))
         filters = {'recipient': account}
     loan_filter = utils.contracts['etherbank'].events.LoanGot.createFilter(
         fromBlock=1, toBlock='latest', argument_filters=filters)
@@ -253,9 +258,11 @@ def get_variables():
     }
     click.secho(
         'collateralRatio:\t{}'.format(result['collateralRatio']), fg='green')
-    click.secho('etherPrice:\t\t{} dollar'.format(result['etherPrice']), fg='green')
     click.secho(
-        'liquidationDuration:\t{} minute'.format(result['liquidationDuration']),
+        'etherPrice:\t\t{} dollar'.format(result['etherPrice']), fg='green')
+    click.secho(
+        'liquidationDuration:\t{} minute'.format(
+            result['liquidationDuration']),
         fg='green')
     click.secho()
     return (result)

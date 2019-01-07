@@ -122,11 +122,15 @@ def send_eth(contract_addr, value, private_key):
 
 def send_eth_call(func, sender):
     if not sender:
-        sender = priv2addr(check_account(None, None, None))
+        sender = current_user()
     result = func.call({
         'from': sender,
     })
     return result
+
+
+def current_user():
+    return priv2addr(os.environ['ETHERBANK_PRIVATEKEY'])
 
 
 def start():

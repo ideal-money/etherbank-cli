@@ -93,9 +93,16 @@ def withdraw(private_key):
 
 
 @main.command()
-@click.option('--liquidation-id', type=int, help="The liquidation's ID")
-def active_liquidations(liquidation_id):
+def active_liquidations():
     "Get list of active liquidations"
+
+    return _active_liquidations()
+
+
+@main.command()
+@click.option('--liquidation-id', type=int, help="The liquidation's ID")
+def show(liquidation_id):
+    "Show the specified liquidation"
 
     return _active_liquidations(liquidation_id)
 
