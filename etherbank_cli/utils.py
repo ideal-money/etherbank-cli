@@ -5,8 +5,6 @@ import click
 from eth_keys import keys
 from web3 import Web3, HTTPProvider
 from . import config
-from . import etherbank
-
 
 def get_addresses(etherbank_addr):
     global addresses
@@ -81,6 +79,7 @@ def check_ether(ctx, param, value):
 
 
 def check_loanid(ctx, param, value):
+    from . import etherbank
     loan = etherbank._loans_list(None, value)
     if not loan:
         click.secho('Invalid loanId.', fg='red')
