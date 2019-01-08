@@ -286,7 +286,7 @@ def get_variables():
     click.secho(
         'collateralRatio:\t{}'.format(result['collateralRatio']), fg='green')
     click.secho(
-        'etherPrice:\t\t{} dollar'.format(result['etherPrice']), fg='green')
+        'etherPrice:\t\t{} ether dollar'.format(result['etherPrice']), fg='green')
     click.secho(
         'liquidationDuration:\t{} minute'.format(
             result['liquidationDuration']),
