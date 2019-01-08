@@ -143,7 +143,8 @@ def min_collateral(dollar):
     result = utils.send_eth_call(func, None)
     click.secho(
         'Minimum collateral for getting {0} dollars loan is {1} ETH'.format(
-            dollar, result / 10.0**18), fg='green')
+            dollar, result / 10.0**18),
+        fg='green')
     click.secho()
     return result
 
@@ -168,15 +169,64 @@ def allowance(owner, spender):
 def show(loan_id):
     "Show the specified loan"
 
-    _loans_list(loan_id=loan_id)
+    result = _loans_list(loan_id=loan_id)
+    if not result:
+        click.secho('There is no loan.', fg='green')
+    else:
+        click.secho('loanId:\t\t{}'.format(result[0]['loanId']), fg='green')
+        click.secho(
+            'collateral:\t{} ether'.format(
+                round(result[0]['collateral'] * 10**-18, 10)),
+            fg='green')
+        click.secho(
+            'amount:\t\t{} dollar'.format(result[0]['amount'] * 10**-2),
+            fg='green')
+        click.secho()
 
 
 @main.command()
 def loans_list():
-    "Get the account's loans list"
+    "Get list of account's loans"
 
     account = utils.current_user()
-    _loans_list(account=account)
+    result = _loans_list(account=account)
+    for loan in sorted(result, key=lambda loan: loan['loanId']):
+        click.secho('loanId:\t\t{}'.format(loan['loanId']), fg='green')
+        click.secho(
+            'collateral:\t{} ether'.format(
+                round(loan['collateral'] * 10**-18, 10)),
+            fg='green')
+        click.secho(
+            'amount:\t\t{} dollar'.format(loan['amount'] * 10**-2), fg='green')
+        click.secho()
+    if not result:
+        click.secho('There is no loan.', fg='green')
+    click.secho()
+
+
+@main.command()
+def liquidatable_loans():
+    "Get list of liquidatable loans"
+
+    result = []
+    var = _get_variables()
+    res = _loans_list()
+    for loan in sorted(res, key=lambda loan: loan['loanId']):
+        if loan['collateral'] * 10**-18 * var['etherPrice'] * 100.0 < var[
+                'collateralRatio'] * loan['amount']:
+            result.append(loan)
+            click.secho('loanId:\t\t{}'.format(loan['loanId']), fg='green')
+            click.secho(
+                'collateral:\t{} ether'.format(
+                    round(loan['collateral'] * 10**-18, 10)),
+                fg='green')
+            click.secho(
+                'amount:\t\t{} dollar'.format(loan['amount'] * 10**-2),
+                fg='green')
+            click.secho()
+    if not result:
+        click.secho('There is no liquidatable loan.', fg='green')
+    click.secho()
 
 
 def _loans_list(account=None, loan_id=None):
@@ -185,6 +235,8 @@ def _loans_list(account=None, loan_id=None):
         filters = {'loanId': loan_id}
     elif account:
         filters = {'recipient': account}
+    else:
+        filters = None
     loan_filter = utils.contracts['etherbank'].events.LoanGot.createFilter(
         fromBlock=1, toBlock='latest', argument_filters=filters)
     loans = utils.w3.eth.getLogs(loan_filter.filter_params)
@@ -223,26 +275,26 @@ def _loans_list(account=None, loan_id=None):
         for decrease_bytes in decreases:
             decrease = decrease_filter.format_entry(decrease_bytes)
             result[loan_id]['collateral'] -= decrease['args']['collateral']
-
-    for loan in sorted(result.values(), key=lambda loan: loan['loanId']):
-        click.secho('loanId:\t\t{}'.format(loan['loanId']), fg='green')
-        click.secho(
-            'collateral:\t{} ether'.format(
-                round(loan['collateral'] * 10**-18, 10)),
-            fg='green')
-        click.secho(
-            'amount:\t\t{} dollar'.format(loan['amount'] * 10**-2), fg='green')
-        click.secho()
-    if not result:
-        click.secho('There is no loan.', fg='green')
-    click.secho()
-    return result.values()
+    return list(result.values())
 
 
 @main.command()
 def get_variables():
     "Get the current variables' value"
 
+    result = _get_variables()
+    click.secho(
+        'collateralRatio:\t{}'.format(result['collateralRatio']), fg='green')
+    click.secho(
+        'etherPrice:\t\t{} dollar'.format(result['etherPrice']), fg='green')
+    click.secho(
+        'liquidationDuration:\t{} minute'.format(
+            result['liquidationDuration']),
+        fg='green')
+    click.secho()
+
+
+def _get_variables():
     result = {
         'collateralRatio':
         utils.send_eth_call(
@@ -256,15 +308,6 @@ def get_variables():
             utils.contracts['etherbank'].functions.liquidationDuration(), None)
         / 60.0
     }
-    click.secho(
-        'collateralRatio:\t{}'.format(result['collateralRatio']), fg='green')
-    click.secho(
-        'etherPrice:\t\t{} dollar'.format(result['etherPrice']), fg='green')
-    click.secho(
-        'liquidationDuration:\t{} minute'.format(
-            result['liquidationDuration']),
-        fg='green')
-    click.secho()
     return (result)
 
 
