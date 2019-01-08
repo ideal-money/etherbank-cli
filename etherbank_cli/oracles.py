@@ -10,7 +10,7 @@ def main():
 
 @main.command()
 @click.option('--ether-price', type=float, help="The ETH price in ETD")
-@click.option('--deposit-rate', type=float, help="The deposit ratio")
+@click.option('--collateral-ratio', type=float, help="The deposit ratio")
 @click.option(
     '--liquidation-duration',
     type=int,
@@ -19,17 +19,17 @@ def main():
     '--private-key',
     callback=utils.check_account,
     help='The privat key to sign the transaction')
-def vote(ether_price, deposit_rate, liquidation_duration, private_key):
+def vote(ether_price, collateral_ratio, liquidation_duration, private_key):
     "Vote on the variable for setting up Ether Bank"
 
-    assert [ether_price, deposit_rate, liquidation_duration
+    assert [ether_price, collateral_ratio, liquidation_duration
             ].count(None) == 2, "You should set one variable per vote"
     if ether_price:
         var_code = 0
         value = int(ether_price * 100)
-    elif deposit_rate:
+    elif collateral_ratio:
         var_code = 1
-        value = int(deposit_rate * 1000)
+        value = int(collateral_ratio * 1000)
     elif liquidation_duration:
         var_code = 2
         value = liquidation_duration * 60
