@@ -5,6 +5,7 @@ import click
 from eth_keys import keys
 from web3 import Web3, HTTPProvider
 from . import config
+from . import etherbank
 
 
 def get_addresses(etherbank_addr):
@@ -64,6 +65,39 @@ def check_account(ctx, param, value):
         sys.exit()
     if value.startswith('0x'):
         value = value[2:]
+    return value
+
+
+def check_ether(ctx, param, value):
+    if not isinstance(value, (int, float)):
+        click.secho('Error: ether must be a number', fg='red')
+        click.secho()
+        sys.exit()
+    elif value <= 0:
+        click.secho('Error: ether must be a positive number', fg='red')
+        click.secho()
+        sys.exit()
+    return value
+
+
+def check_loanid(ctx, param, value):
+    loan = etherbank._loans_list(None, value)
+    if not loan:
+        click.secho('Invalid loanId.', fg='red')
+        click.secho()
+        sys.exit()
+    return value
+
+
+def check_dollar(ctx, param, value):
+    if not isinstance(value, (int, float)):
+        click.secho('Error: dollar must be a number', fg='red')
+        click.secho()
+        sys.exit()
+    elif value < 0:
+        click.secho('Error: dollar must be a positive number', fg='red')
+        click.secho()
+        sys.exit()
     return value
 
 

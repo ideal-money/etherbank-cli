@@ -11,13 +11,17 @@ def main():
 
 @main.command()
 @click.option(
-    '--ether', type=float, required=True, help='The collateral amount in ETH')
+    '--ether',
+    type=float,
+    callback=utils.check_ether,
+    required=True,
+    help='The collateral amount in ether')
 @click.option(
     '--private-key',
     callback=utils.check_account,
     help='The privat key to sign the transaction')
 def send_eth(ether, private_key):
-    "Get Ether dollar loan by sending ETH"
+    "Get Ether dollar loan by sending ether"
 
     tx_hash = utils.send_eth(utils.addresses['etherbank'], int(ether * 10**18),
                              private_key)
@@ -26,10 +30,15 @@ def send_eth(ether, private_key):
 
 @main.command()
 @click.option(
-    '--ether', type=float, required=True, help='The collateral amount in ETH')
+    '--ether',
+    type=float,
+    callback=utils.check_ether,
+    required=True,
+    help='The collateral amount in ETH')
 @click.option(
     '--dollar',
     type=float,
+    callback=utils.check_dollar,
     required=True,
     help='The loan amount in Ether dollar')
 @click.option(
@@ -39,6 +48,11 @@ def send_eth(ether, private_key):
 def get_loan(ether, dollar, private_key):
     "Get Ether dollar loan by depositing ETH"
 
+    var = _get_variables()
+    if ether * var['etherPrice'] < var['collateralRatio'] * dollar:
+        click.secho('Error: Insufficient collateral', fg='red')
+        click.secho()
+        sys.exit()
     func = utils.contracts['etherbank'].functions.getLoan(int(dollar * 100))
     tx_hash = utils.send_transaction(func, int(ether * 10**18), private_key)
     return tx_hash
@@ -46,8 +60,17 @@ def get_loan(ether, dollar, private_key):
 
 @main.command()
 @click.option(
-    '--ether', type=float, required=True, help='The collateral amount in ETH')
-@click.option('--loan-id', type=int, required=True, help="The loan's ID")
+    '--ether',
+    type=float,
+    callback=utils.check_ether,
+    required=True,
+    help='The collateral amount in ETH')
+@click.option(
+    '--loan-id',
+    type=int,
+    callback=utils.check_loanid,
+    required=True,
+    help="The loan's ID")
 @click.option(
     '--private-key',
     callback=utils.check_account,
@@ -61,16 +84,32 @@ def increase_collateral(ether, loan_id, private_key):
 
 
 @main.command()
-@click.option('--loan-id', type=int, required=True, help="The loan's ID")
 @click.option(
-    '--ether', type=float, required=True, help='The collateral amount in ETH')
+    '--loan-id',
+    type=int,
+    callback=utils.check_loanid,
+    required=True,
+    help="The loan's ID")
+@click.option(
+    '--ether',
+    type=float,
+    callback=utils.check_ether,
+    required=True,
+    help='The collateral amount in ETH')
 @click.option(
     '--private-key',
     callback=utils.check_account,
     help='The privat key to sign the transaction')
-def decrease_collateral(ether, loan_id, private_key):
+def decrease_collateral(loan_id, ether, private_key):
     "Decrease the loan's collateral"
 
+    loan = _loans_list(None, loan_id)
+    var = _get_variables()
+    if (loan[0]['collateral'] * 10**-18 - ether) * var['etherPrice'] < var[
+            'collateralRatio'] * loan[0]['amount'] / 100.0:
+        click.secho('Insufficient collateral.', fg='red')
+        click.secho()
+        sys.exit()
     func = utils.contracts['etherbank'].functions.decreaseCollateral(
         loan_id, int(ether * 10**18))
     tx_hash = utils.send_transaction(func, 0, private_key)
@@ -79,24 +118,33 @@ def decrease_collateral(ether, loan_id, private_key):
 
 @main.command()
 @click.option(
+    '--loan-id',
+    type=int,
+    callback=utils.check_loanid,
+    required=True,
+    help="The loan's ID")
+@click.option(
     '--dollar',
     type=float,
+    callback=utils.check_dollar,
     required=True,
     help='The loan amount in Ether dollar')
-@click.option('--loan-id', type=int, required=True, help="The loan's ID")
 @click.option(
     '--private-key',
     callback=utils.check_account,
     help='The privat key to sign the transaction')
-def settle_loan(dollar, loan_id, private_key):
+def settle_loan(loan_id, dollar, private_key):
     "Settle the Ether dollar loan"
 
-    loan = _loans_list(None, loan_id)
-    if not loan:
-        click.secho('Check the loanId.', fg='red')
+    balance = _get_balance(utils.priv2addr(private_key))
+    if balance < dollar * 100:
+        click.secho('Error: Insufficient balance', fg='red')
+        click.secho()
         sys.exit()
+    loan = _loans_list(None, loan_id)[0]
     if loan['amount'] < dollar:
         click.secho('The amount exceeds the loan', fg='red')
+        click.secho()
         sys.exit()
     utils.approve_amount(utils.addresses['etherbank'], dollar, private_key)
     func = utils.contracts['etherbank'].functions.settleLoan(
@@ -107,7 +155,12 @@ def settle_loan(dollar, loan_id, private_key):
 
 
 @main.command()
-@click.option('--loan-id', type=int, required=True, help='The loan id')
+@click.option(
+    '--loan-id',
+    type=int,
+    callback=utils.check_loanid,
+    required=True,
+    help='The loan id')
 @click.option(
     '--private-key',
     callback=utils.check_account,
@@ -115,26 +168,24 @@ def settle_loan(dollar, loan_id, private_key):
 def liquidate(loan_id, private_key):
     "Start the liquidation proccess"
 
+    var = _get_variables()
+    loan = _loans_list(None, loan_id)
+    if loan[0]['collateral'] * 10**-18 * var['etherPrice'] > var[
+            'collateralRatio'] * loan[0]['amount'] / 100.0:
+        click.secho('Error: Sufficient collateral', fg='red')
+        click.secho()
+        sys.exit()
     func = utils.contracts['etherbank'].functions.liquidate(loan_id)
     tx_hash = utils.send_transaction(func, 0, private_key)
     return tx_hash
 
 
 @main.command()
-def get_balance():
-    "Get Ether dollar account's balance"
-
-    account = utils.current_user()
-    account = utils.w3.toChecksumAddress(account)
-    func = utils.contracts['etherdollar'].functions.balanceOf(account)
-    result = utils.send_eth_call(func, account)
-    click.secho('Balance: {} dollar'.format(result / 100.0), fg='green')
-    click.secho()
-    return result
-
-
-@main.command()
-@click.option('--dollar', type=float, help="The account's address")
+@click.option(
+    '--dollar',
+    type=float,
+    callback=utils.check_dollar,
+    help="The account's address")
 def min_collateral(dollar):
     "Count min collateral for the loan"
 
@@ -143,10 +194,19 @@ def min_collateral(dollar):
     result = utils.send_eth_call(func, None)
     click.secho(
         'Minimum collateral for getting {0} dollars loan is {1} ETH'.format(
-            dollar, result / 10.0**18),
+            dollar, round(result * 10**-18, 10)),
         fg='green')
     click.secho()
     return result
+
+
+@main.command()
+def get_balance():
+    "Get Ether dollar account's balance"
+
+    result = _get_balance(utils.current_user())
+    click.secho('Balance: {} dollar'.format(result / 100.0), fg='green')
+    click.secho()
 
 
 @main.command()
@@ -171,7 +231,7 @@ def show(loan_id):
 
     result = _loans_list(loan_id=loan_id)
     if not result:
-        click.secho('There is no loan.', fg='green')
+        click.secho('There is no loan.', fg='red')
     else:
         click.secho('loanId:\t\t{}'.format(result[0]['loanId']), fg='green')
         click.secho(
@@ -229,6 +289,23 @@ def liquidatable_loans():
     click.secho()
 
 
+@main.command()
+def get_variables():
+    "Get the current variables' value"
+
+    result = _get_variables()
+    click.secho(
+        'collateralRatio:\t{}'.format(result['collateralRatio']), fg='green')
+    click.secho(
+        'etherPrice:\t\t{} ether dollar'.format(result['etherPrice']),
+        fg='green')
+    click.secho(
+        'liquidationDuration:\t{} minute'.format(
+            result['liquidationDuration']),
+        fg='green')
+    click.secho()
+
+
 def _loans_list(account=None, loan_id=None):
     result = {}
     if loan_id:
@@ -278,22 +355,6 @@ def _loans_list(account=None, loan_id=None):
     return list(result.values())
 
 
-@main.command()
-def get_variables():
-    "Get the current variables' value"
-
-    result = _get_variables()
-    click.secho(
-        'collateralRatio:\t{}'.format(result['collateralRatio']), fg='green')
-    click.secho(
-        'etherPrice:\t\t{} ether dollar'.format(result['etherPrice']), fg='green')
-    click.secho(
-        'liquidationDuration:\t{} minute'.format(
-            result['liquidationDuration']),
-        fg='green')
-    click.secho()
-
-
 def _get_variables():
     result = {
         'collateralRatio':
@@ -309,6 +370,13 @@ def _get_variables():
         / 60.0
     }
     return (result)
+
+
+def _get_balance(account):
+    account = utils.w3.toChecksumAddress(account)
+    func = utils.contracts['etherdollar'].functions.balanceOf(account)
+    result = utils.send_eth_call(func, account)
+    return result
 
 
 if __name__ == '__main__':
