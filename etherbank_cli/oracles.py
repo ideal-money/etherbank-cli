@@ -10,7 +10,7 @@ def main():
 
 @main.command()
 @click.option('--ether-price', type=float, help="The ETH price in ETD")
-@click.option('--collateral-ratio', type=float, help="The deposit ratio")
+@click.option('--collateral-ratio', type=float, help="The collateral ratio")
 @click.option(
     '--liquidation-duration',
     type=int,
