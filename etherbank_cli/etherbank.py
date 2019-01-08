@@ -352,6 +352,18 @@ def _loans_list(account=None, loan_id=None):
         for decrease_bytes in decreases:
             decrease = decrease_filter.format_entry(decrease_bytes)
             result[loan_id]['collateral'] -= decrease['args']['collateral']
+
+        liquidate_filter = utils.contracts[
+            'liquidator'].events.LiquidationStopped.createFilter(
+                fromBlock=1,
+                toBlock='latest',
+                argument_filters={'loanId': loan_id})
+        decreases = utils.w3.eth.getLogs(liquidate_filter.filter_params)
+        for decrease_bytes in decreases:
+            decrease = liquidate_filter.format_entry(decrease_bytes)
+            result[loan_id]['collateral'] -= decrease['args']['bestBid']
+            result[loan_id]['amount'] = 0
+
     return list(result.values())
 
 
