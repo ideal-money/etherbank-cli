@@ -6,6 +6,7 @@ from eth_keys import keys
 from web3 import Web3, HTTPProvider
 from . import config
 
+
 def get_addresses(etherbank_addr):
     global addresses
     etherbank_contract = w3.eth.contract(
@@ -78,14 +79,27 @@ def check_ether(ctx, param, value):
     return value
 
 
-def check_loanid(ctx, param, value):
+def check_loan_id(ctx, param, value):
     from . import etherbank
-    loan = etherbank._loans_list(None, value)
+    loan = etherbank._show(value)
     if not loan:
         click.secho('Invalid loanId.', fg='red')
         click.secho()
         sys.exit()
     return value
+
+
+def check_liquidation_id(ctx, param, value):
+    from . import liquidator
+    liquidation = liquidator._active_liquidations(value)
+    if not liquidation:
+        click.secho('Invalid liquidation id.', fg='red')
+        click.secho()
+        sys.exit()
+    elif liquidation['state'] != 'active':
+        click.secho('The liquidation finished.', fg='red')
+        click.secho()
+        sys.exit()
 
 
 def check_dollar(ctx, param, value):
