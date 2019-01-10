@@ -46,3 +46,6 @@ setup(
         'Programming Language :: Python :: 3.7',
     ],
 )
+
+if os.path.exists(os.path.expanduser('~/.etherbank.json')):
+    os.remove(os.path.expanduser('~/.etherbank.json'))
